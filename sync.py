@@ -7,6 +7,7 @@
 환경 변수
   필수: NAVER_ID, NAVER_APP_PW, GCAL_ID, GOOGLE_SA_JSON
   선택: NAVER_CALENDARS  동기화할 네이버 캘린더 이름(쉼표 구분). 비우면 전체.
+        NAVER_ID2, NAVER_APP_PW2, NAVER_CALENDARS2  두 번째 네이버 계정(예: 아내)
         PAST_DAYS      과거 범위(일), 기본 30
         FUTURE_DAYS    미래 범위(일), 기본 365
         DEBUG          1이면 오류 전체 출력(로컬 테스트 전용, Actions에서 켜지 말 것)
@@ -96,30 +97,40 @@ def convert(vevent, cal_key: str):
     return body
 
 
+def naver_accounts() -> list[str]:
+    """계정별 환경 변수 접미사. ""=첫 계정(필수), "2"=두 번째 계정(NAVER_ID2가 있을 때만)."""
+    return [""] + (["2"] if os.environ.get("NAVER_ID2") else [])
+
+
 def fetch_naver(start: datetime, end: datetime) -> dict:
-    client = caldav.DAVClient(
-        url=NAVER_URL,
-        username=env("NAVER_ID"),
-        password=env("NAVER_APP_PW"),
-    )
-    calendars = client.principal().calendars()
-
-    wanted = {
-        n.strip() for n in os.environ.get("NAVER_CALENDARS", "").split(",") if n.strip()
-    }
-    if wanted:
-        selected = [c for c in calendars if (c.get_display_name() or "") in wanted]
-    else:
-        selected = calendars
-    print(f"naver calendars: total={len(calendars)} selected={len(selected)}")
-
     events: dict = {}
-    for cal in selected:
-        for obj in cal.search(start=start, end=end, event=True, expand=True):
-            for vevent in obj.icalendar_instance.walk("VEVENT"):
-                ev = convert(vevent, str(cal.url))
-                if ev:
-                    events[ev["id"]] = ev
+    for sfx in naver_accounts():
+        client = caldav.DAVClient(
+            url=NAVER_URL,
+            username=env(f"NAVER_ID{sfx}"),
+            password=env(f"NAVER_APP_PW{sfx}"),
+        )
+        calendars = client.principal().calendars()
+
+        wanted = {
+            n.strip()
+            for n in os.environ.get(f"NAVER_CALENDARS{sfx}", "").split(",")
+            if n.strip()
+        }
+        if wanted:
+            selected = [c for c in calendars if (c.get_display_name() or "") in wanted]
+        else:
+            selected = calendars
+        print(f"naver{sfx or '1'} calendars: total={len(calendars)} selected={len(selected)}")
+
+        for cal in selected:
+            # 두 번째 계정은 접미사를 붙여 ID 충돌을 막는다. 첫 계정은 기존 ID를 유지한다.
+            key = f"{sfx}|{cal.url}" if sfx else str(cal.url)
+            for obj in cal.search(start=start, end=end, event=True, expand=True):
+                for vevent in obj.icalendar_instance.walk("VEVENT"):
+                    ev = convert(vevent, key)
+                    if ev:
+                        events[ev["id"]] = ev
     return events
 
 

@@ -27,6 +27,9 @@ jobs:
           GCAL_ID: ${{ secrets.GCAL_ID }}
           GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
           NAVER_CALENDARS: ${{ secrets.NAVER_CALENDARS }}
+          NAVER_ID2: ${{ secrets.NAVER_ID2 }}
+          NAVER_APP_PW2: ${{ secrets.NAVER_APP_PW2 }}
+          NAVER_CALENDARS2: ${{ secrets.NAVER_CALENDARS2 }}
 
   # 저장소에 60일간 활동이 없으면 예약 실행이 꺼지는 것을 막는다
   keepalive:
