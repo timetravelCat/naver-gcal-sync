@@ -1,0 +1,37 @@
+name: naver-gcal-sync
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # 10분마다 (public 저장소는 Actions 무료)
+  workflow_dispatch:          # Actions 탭에서 수동 실행
+
+concurrency:
+  group: naver-gcal-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -q -r requirements.txt
+      - run: python sync.py
+        env:
+          NAVER_ID: ${{ secrets.NAVER_ID }}
+          NAVER_APP_PW: ${{ secrets.NAVER_APP_PW }}
+          GCAL_ID: ${{ secrets.GCAL_ID }}
+          GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
+          NAVER_CALENDARS: ${{ secrets.NAVER_CALENDARS }}
+
+  # 저장소에 60일간 활동이 없으면 예약 실행이 꺼지는 것을 막는다
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - uses: liskin/gh-workflow-keepalive@v1
