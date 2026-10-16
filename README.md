@@ -2,6 +2,8 @@
 
 네이버 캘린더(CalDAV) 일정을 구글 캘린더 한 곳에 단방향으로 복사합니다. GitHub Actions가 10분마다 `sync.py`를 실행합니다.
 
+휴대폰 캘린더(삼성 월렛 영화 예매 등)를 공유 캘린더로 복사하는 MacroDroid 설정은 [`phone-calendar-sync/`](phone-calendar-sync/README.md)에 있습니다.
+
 ## Secrets
 - `NAVER_ID`, `NAVER_APP_PW`: 네이버 아이디, 애플리케이션 비밀번호
 - `GCAL_ID`: 대상 구글 캘린더 ID (서비스 계정에 "일정 변경" 권한으로 공유)
